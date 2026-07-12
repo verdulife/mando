@@ -19,6 +19,7 @@
 - **Frontend:** Web Components nativos (custom elements), HTML/CSS/JS modular.
 - **CSS:** TailwindCSS v4.3.2 + `@tailwindcss/postcss`.
 - **Plataforma objetivo:** Windows 10/11 x64.
+- **CI/CD:** GitHub Actions (compila `mando.exe` en cada release tag).
 
 ## Cómo ejecutar en desarrollo
 
@@ -35,40 +36,44 @@ $env:PORT=8080; bun run dev
 
 ## Cómo instalar para el usuario final
 
-```powershell
-# Doble click en scripts\install.bat, o desde terminal:
-.\scripts\install.bat
-```
+Descargar `mando.exe` de GitHub Releases y ejecutarlo. En primera ejecución instala ViGEmBus automáticamente si falta.
 
-El instalador guía al usuario con una interfaz TUI atractiva:
-flechas ← → para navegar, Enter para aceptar. Sin teclas complejas.
-
-## Cómo generar el instalador
+## Cómo compilar el ejecutable
 
 ```powershell
 bun install
 bun run build
-bun run build:installer
 ```
 
-El instalador final se genera en `dist/MandoSetup.exe`.
+Genera `dist/mando.exe` con todo embebido (webapp, ViGEmClient.dll, ViGEmBus installer).
+
+## Cómo lanzar un release
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+GitHub Actions compila y publica el Release automáticamente.
 
 ## Requisitos del sistema
 
 1. Windows 10/11 x64.
-2. Bun instalado (solo en desarrollo).
-3. Driver ViGEmBus instalado (el instalador final lo instalará automáticamente).
-4. Resolvedor mDNS/Bonjour en Windows para que `mando.local` funcione (iTunes, iCloud o Bonjour Print Services).
+2. Driver ViGEmBus (se instala automáticamente en primera ejecución).
+3. Resolvedor mDNS/Bonjour en Windows para que `mando.local` funcione (iTunes, iCloud o Bonjour Print Services).
 
 ## Estructura de archivos
 
 ```
 mando/
+├── .github/workflows/
+│   └── release.yml       # GitHub Actions: compila y publica releases
 ├── src/
 │   ├── server.ts          # Servidor HTTP/WebSocket/mDNS
 │   ├── gamepad.ts         # Wrapper ViGEmClient (mando virtual)
 │   ├── vigem-loader.ts    # Carga del addon nativo embebido
 │   ├── vigem-embedded.ts  # Wrappers JS de vigemclient para el exe
+│   ├── vigem-installer.ts # Auto-instalación de ViGEmBus
 │   ├── public-loader.ts   # Carga/extracción de archivos públicos embebidos
 │   ├── public-embedded.ts # Archivos públicos embebidos en base64
 │   ├── tray.ts            # Tray icon e inicio automático
@@ -98,39 +103,47 @@ mando/
 │       ├── sw.js          # Service worker
 │       └── icons/         # Iconos PNG/ICO
 ├── scripts/
-│   ├── install.bat               # [NUEVO] Instalador (doble click) — un solo archivo
-│   ├── install.ps1               # [NUEVO] Fuente PowerShell del instalador
-│   ├── run.ps1                   # [NUEVO] Launcher invisible para inicio automático
-│   ├── uninstall.ps1             # [NUEVO] Desinstalador
-│   ├── build.ts                  # Build de mando.exe + descarga de ViGEmBus (legacy)
-│   ├── build-debug.ts            # Build de mando-debug.exe (legacy)
+│   ├── build.ts                  # Build de mando.exe (principal)
+│   ├── build-debug.ts            # Build de mando-debug.exe
 │   ├── build-css.ts              # Build de CSS con PostCSS + Tailwind v4
 │   ├── postinstall.ts            # Genera iconos, CSS, wrappers embebidos
-│   ├── setup.iss                 # Script de Inno Setup (legacy)
-│   ├── hide-console.ps1          # Post-proceso: cambia subsistema a WINDOWS (legacy)
+│   ├── hide-console.ps1          # Post-proceso: cambia subsistema a WINDOWS
 │   ├── generate-icons.py         # Generación de iconos
-│   ├── generate-vigem-embedded.ts  # Genera vigem-embedded.ts (legacy)
-│   └── generate-public-embedded.ts # Genera public-embedded.ts (legacy)
-├── ROADMAP.md            # Plan de implementación por fases
-├── test-vigem.ts          # Script de diagnóstico de ViGEm
+│   ├── generate-vigem-embedded.ts  # Genera vigem-embedded.ts
+│   ├── generate-public-embedded.ts # Genera public-embedded.ts
+│   ├── setup.iss                 # Script de Inno Setup (legacy)
+│   ├── install.bat               # [BANQUILLO] Instalador TUI PowerShell
+│   ├── install.ps1               # [BANQUILLO] Fuente del instalador TUI
+│   ├── run.ps1                   # [BANQUILLO] Launcher invisible
+│   └── uninstall.ps1             # [BANQUILLO] Desinstalador
+├── assets/
+│   ├── icon.svg                  # Icono fuente
+│   └── ViGEmBus_*.exe.bin        # Installer de ViGEmBus (embebido en build)
+├── AGENTS.md
+├── ARCHITECTURE.md
+├── README.md
+├── ROADMAP.md
 ├── package.json
 ├── bun.lock
-└── README.md
+└── test-vigem.ts
 ```
 
 ## Decisiones de diseño ya tomadas
 
-- ~~**Un solo ejecutable final:** se compilará con `bun build --compile`.~~
-- **Distribución mediante script PowerShell:** para evitar falsos positivos de antivirus.
-  El instalador (`install.ps1`) descarga Bun, ViGEmBus y Mando en el sistema del usuario.
-- ~~**Sin consola en producción:** `--windows-hide-console`.~~
+- **Un solo ejecutable autocontenido:** `mando.exe` incluye webapp, ViGEmClient.dll, vigemclient.node y el instalador de ViGEmBus. No necesita instalación ni dependencias externas.
+- **Auto-instalación de ViGEmBus:** si el driver no está instalado, `mando.exe` lo extrae del propio ejecutable y lo instala silenciosamente en primera ejecución (con re-lanzamiento como admin si es necesario).
+- **Distribución vía GitHub Releases:** cada tag `v*` dispara GitHub Actions que compila y publica el `.exe`.
+- **Sin consola en producción:** `--windows-hide-console` + post-procesado con `hide-console.ps1`.
 - **Tray icon en Windows:** `systray2` para abrir panel admin y salir.
 - **Panel de administración:** página web local (`/admin`) servida por Bun, no GUI nativa.
 - **Multi-dispositivo:** cada cliente crea su propio `X360Controller`. No hay mando compartido.
 - **Sonidos:** feedback tipo "tac-tac" generado con Web Audio API (triangle + square corto).
 - **Inicio automático:** activado por defecto, desactivable desde tray/GUI.
+- **Instalador script PowerShell (BANQUILLO):** `install.ps1` con TUI funciona pero el `.bat` de extracción tiene un bug. Se mantiene como alternativa pero no se usa activamente.
 
 ## Estado actual
+
+### Implementado y probado
 
 - [x] Servidor HTTP + WebSocket.
 - [x] mDNS/Bonjour (`mando.local`) con fallback a IP local si no hay Bonjour.
@@ -138,24 +151,24 @@ mando/
 - [x] Integración ViGEm: múltiples mandos virtuales Xbox 360 (uno por dispositivo).
 - [x] Reconexión automática en el cliente.
 - [x] Liberación de botones/ejes al desconectar.
-- [x] Feedback sonoro.
+- [x] Feedback sonoro y visual (radial glow + neón).
 - [x] PWA/manifest/service worker.
 - [x] Soporte multi-mando probado (2+ dispositivos simultáneos).
 - [x] Panel de administración web con QR, lista de clientes y ajustes por dispositivo.
-- [x] Tray icon e inicio automático probados.
-- [x] Instalador Windows probado en PC limpio.
-- [x] Instalador script PowerShell con TUI (flechas ← →, Enter, colores brand).
-- [x] TailwindCSS v4 con arbitrary classes funcionales.
-- [x] Bonjour fallback: el servidor no crashea si falta el resolvedor mDNS.
-- [x] Componentización UI (Web Components: mando-button, mando-joystick, mando-pad, grid-engine, mando-gamepad).
-- [x] Efectos visuales: radial glow + neón interior fino al presionar.
-- [x] Layouts modulares: grid-engine construye DOM desde areas + components.
-- [x] Layouts disponibles: Xbox, GameBoy (D-Pad/Joystick), Arcade (D-Pad/Joystick, ABC 3 sectores), Fighter (D-Pad/Joystick, ABXY), Racing, Shooter.
-- [x] ABX pad: 3 sectores pizza-slice (120°) A/B/X, rotado centrando A abajo.
-- [x] letterPos(): posiciones de letras calculadas vectorialmente.
-- [x] Sistema de layouts JSON con carga dinámica vía fetch.
-- [x] Layout builder visual (drag & drop, click, redimensionado 4 direcciones, import/export, guardar/editar).
-- [ ] Testear editor de layouts visual (arrastrar, reposicionar, redimensionar, import/export, guardar, cerrar y reabrir).
+- [x] Selector de layout por cliente desde admin.
+- [x] Persistencia de configuración (layout, sonido, vibración).
+- [x] Tray icon e inicio automático.
+- [x] TailwindCSS v4 con arbitrary classes.
+- [x] Componentización UI (Web Components).
+- [x] Layouts modulares (Xbox, GameBoy, Arcade, Fighter, Racing, Shooter).
+- [x] Editor de layouts visual (drag & drop, redimensionado, import/export).
+- [x] Auto-instalación de ViGEmBus desde el propio ejecutable.
+- [x] GitHub Actions release workflow.
+
+### Por hacer / en banquillo
+
+- [ ] Testear editor de layouts visual a fondo (arrastrar, reposicionar, redimensionar, import/export, guardar, cerrar y reabrir).
+- [ ] Instalador script PowerShell (`install.ps1` + `install.bat`) — **en banquillo** por bug de extracción del `.bat`. El enfoque actual (single exe + auto-install) lo hace innecesario.
 
 ## Convenciones
 
@@ -164,18 +177,17 @@ mando/
 - Los logs del servidor usan formato `[HH:MM:SS] mensaje` en español.
 - El puerto por defecto es `7355`.
 - El hostname mDNS es `mando` → `mando.local`.
-- La webapp del mando se sirve en `/`; el panel admin irá en `/admin`.
 - CSS build: `bun run build:css` ejecuta `scripts/build-css.ts` que usa PostCSS + `@tailwindcss/postcss`.
 - `@source` en `styles-input.css` usa rutas absolutas (`C:/Users/verdu/mando/src/public/**/*.html`) porque las rutas relativas no funcionan en Windows+Bun.
+- Los releases se gestionan con tags Git + GitHub Actions.
 
 ## Notas importantes
 
-- `vigemclient` contiene un addon nativo N-API y depende de `ViGEmClient.dll`. El build embebe ambos archivos y reconstruye el paquete `vigemclient` en `%TEMP%\mando-vigem` en tiempo de ejecución para que Windows resuelva la DLL correctamente. (Solo relevante para el build compilado legacy.)
-- Los archivos públicos (`src/public/`) se embeben en base64 en `src/public-embedded.ts` y se extraen a `%TEMP%\mando-public` en el ejecutable compilado. (Solo relevante para el build compilado legacy.)
-- `bun build --compile --windows-hide-console` tiene un bug conocido en Bun que no oculta la consola. El build post-procesa `mando.exe` con `scripts/hide-console.ps1` para cambiar el subsistema PE de CONSOLE a WINDOWS.
-- ViGEmBus está archivado en GitHub pero la última versión (`1.22.0`) sigue funcionando en Windows 10/11.
+- `vigemclient` contiene un addon nativo N-API y depende de `ViGEmClient.dll`. El build embebe ambos archivos y reconstruye el paquete `vigemclient` en `%TEMP%\mando-vigem\PID` en tiempo de ejecución.
+- Los archivos públicos (`src/public/`) se embeben en base64 en `src/public-embedded.ts` y se extraen a `%TEMP%\mando-public` en el ejecutable compilado.
+- El instalador de ViGEmBus se importa con `import ... with { type: 'file' }` y se extrae a `%TEMP%\mando-vigembus-installer.exe` en primera ejecución si el driver falta.
+- `bun build --compile --windows-hide-console` tiene un bug conocido que no oculta la consola. Se post-procesa con `hide-console.ps1`.
+- ViGEmBus `1.22.0` (última versión disponible) funciona en Windows 10/11.
 - El driver requiere privilegios de administrador para instalarse.
-- mDNS puede fallar en Windows si no hay un resolvedor Bonjour instalado. El servidor maneja este caso con un try-catch y continúa funcionando usando la IP local.
-- El instalador script (`install.ps1`) requiere PowerShell 7+. El script verifica la versión al inicio y guía al usuario si es necesario.
-- El instalador se auto-eleva a administrador cuando necesita instalar ViGEmBus.
-- El inicio automático se implementa como tarea programada (scheduled task) en vez de registro HKCU\Run, para ocultar la ventana de terminal.
+- mDNS puede fallar en Windows si no hay un resolvedor Bonjour instalado. El servidor maneja este caso y continúa usando la IP local.
+- `Bun.embeddedFiles` no incluye archivos importados con `with { type: 'file' }`. Estos se acceden directamente vía `Bun.file(path)`.

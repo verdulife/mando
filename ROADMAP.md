@@ -2,6 +2,11 @@
 
 Plan de implementación acordado. Resolver fase a fase en orden.
 
+> **Nota:** A partir de julio 2026, la distribución se hace mediante un único
+> `mando.exe` autocontenido que auto-instala ViGEmBus en primera ejecución.
+> Los enfoques anteriores (Inno Setup → Fase 5, script PowerShell → Fase 13)
+> quedan superseded / en banquillo.
+
 ---
 
 ## Fase 1 — PWA y experiencia nativa en el iPhone
@@ -88,7 +93,10 @@ Objetivo: ejecutar el servidor en segundo plano con icono en la bandeja del sist
 
 ---
 
-## Fase 5 — Instalador para Windows
+## Fase 5 — Instalador para Windows (superseded)
+
+> **SUPERSEDED** por el enfoque actual: un solo `mando.exe` autocontenido
+> que auto-instala ViGEmBus. No necesita instalador.
 
 Objetivo: un único `.exe` de instalación que instale todo lo necesario.
 
@@ -109,7 +117,6 @@ Objetivo: un único `.exe` de instalación que instale todo lo necesario.
   - Crear desinstalador.
 - [x] Descargar/embeber `ViGEmBus_1.22.0_x64_x86_arm64.exe` en el instalador.
 - [x] Generar el instalador final `dist/MandoSetup.exe`.
-- [ ] Probar en un PC limpio o máquina virtual.
 
 ---
 
@@ -188,9 +195,7 @@ Objetivo: permitir al usuario elegir layout desde el panel de administración.
 
 Objetivo: personalizar assets del instalador (iconos, splash screen, etc.).
 
-> **NOTA:** Esta fase queda superseded por la Fase 13 (instalador script).
-> Los scripts de build/installer antiguos (`build.ts`, `setup.iss`, etc.)
-> se mantienen como referencia pero no se usan.
+> **SUPERSEDED** por el enfoque actual (single exe autocontenido).
 
 ### Tareas
 
@@ -225,15 +230,18 @@ Objetivo: permitir crear y editar layouts desde el panel de administración.
 
 - Las fases deben resolverse en orden, pero dentro de cada fase se puede iterar.
 - Antes de la Fase 5 se recomienda una prueba de concepto del multi-mando (Fase 2) para asegurar que ViGEm soporta múltiples targets.
-- ~~El instalador final no incluirá Bun como dependencia; usará `bun build --compile` para generar un ejecutable standalone.~~
-- El instalador actual (Fase 13) usa un script PowerShell que descarga e instala Bun automáticamente.
+- A partir de julio 2026 la distribución es mediante un solo `mando.exe` que auto-instala ViGEmBus.
 
 ---
 
-## Fase 13 — Instalador script (PowerShell TUI)
+## Fase 13 — Instalador script (PowerShell TUI) [BANQUILLO]
 
 Objetivo: reemplazar el ejecutable compilado + Inno Setup por un script PowerShell
 con interfaz TUI atractiva, evitando falsos positivos de antivirus.
+
+> **ESTADO: BANQUILLO.** El `.bat` de extracción tiene un bug que crea un archivo
+> `$null`. El enfoque actual (single exe + auto-install) hace este instalador
+> innecesario, pero se mantiene como alternativa.
 
 ### Tareas
 
@@ -253,7 +261,6 @@ con interfaz TUI atractiva, evitando falsos positivos de antivirus.
 - [x] `scripts/run.ps1`: Launcher invisible para scheduled task
 - [x] `scripts/uninstall.ps1`: Limpieza de tarea, registro y carpeta
 - [x] Probar sintaxis, extracción y renderizado del instalador
-- [ ] Probar todo el flujo de instalación real (descarga e instalación)
-- [ ] Manejar edge cases (Bun ya instalado, ViGEmBus ya instalado,
-      sin permisos de admin, etc.)
-- [ ] Probar desinstalación
+- [ ] ~~Probar todo el flujo de instalación real (descarga e instalación)~~
+- [ ] ~~Manejar edge cases (Bun ya instalado, ViGEmBus ya instalado, sin permisos de admin, etc.)~~
+- [ ] ~~Probar desinstalación~~
