@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+tools/
+assets/*.bin
+assets/*.exe
+
+# Generated source files
+src/public-embedded.ts
+src/vigem-embedded.ts
+src/public/styles.css
+
+# Python virtual env
+.venv/
+.venv-icons/
+
+# Logs
+*.log
+
+# OS junk
+Thumbs.db
+.DS_Store

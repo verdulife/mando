@@ -1,0 +1,12 @@
+{
+  "id": "fighter-joystick",
+  "name": "Fighter (Joystick)",
+  "areas": [
+    "LS LS LS LS SE SE ST ST AY AY AY AY",
+    "LS LS LS LS SE SE ST ST AY AY AY AY",
+    "LS LS LS LS SE SE ST ST AY AY AY AY",
+    "LS LS LS LS SE SE ST ST AY AY AY AY",
+    "LS LS LS LS SE SE ST ST AY AY AY AY",
+    "LS LS LS LS SE SE ST ST AY AY AY AY"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "gameboy-joystick",
+  "name": "GameBoy (Joystick)",
+  "areas": [
+    "LS LS LS LS SE SE ST ST AB AB AB AB",
+    "LS LS LS LS SE SE ST ST AB AB AB AB",
+    "LS LS LS LS SE SE ST ST AB AB AB AB",
+    "LS LS LS LS SE SE ST ST AB AB AB AB",
+    "LS LS LS LS SE SE ST ST AB AB AB AB",
+    "LS LS LS LS SE SE ST ST AB AB AB AB"
+  ]
+}

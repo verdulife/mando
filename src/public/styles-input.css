@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@source "C:/Users/verdu/mando/src/public/**/*.html";
+@source "C:/Users/verdu/mando/src/public/components/**/*.js";
+
+@theme {
+  --color-bg: #0a0a0a;
+  --color-panel: #151515;
+  --color-panel-hover: #1f1f1f;
+  --color-panel-border: #2a2a2a;
+  --color-text: #e5e5e5;
+  --color-text-active: #ffffff;
+  --color-brand: #edca48;
+  --color-danger: #dc2626;
+  --color-success: #22c55e;
+  --color-accent: #3b82f6;
+  --color-muted: #888888;
+
+  --font-proto: "Proto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@layer base {
+  * {
+    @apply m-0 p-0 box-border;
+    touch-action: manipulation;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  html,
+  body {
+    @apply h-dvh w-full overflow-hidden bg-bg text-text font-proto select-none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+  }
+}
+
+@layer components {
+  #status.visible {
+    opacity: 1;
+  }
+
+  .mando-btn {
+    @apply flex items-center justify-center border border-panel-border/30 bg-panel rounded-lg;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+    color: rgba(229,229,229,0.25);
+    opacity: 0.9;
+    transition: opacity 75ms ease-out, color 75ms ease-out;
+  }
+
+  .mando-btn:active,
+  .mando-btn.active {
+    opacity: 1;
+    color: var(--color-text-active);
+  }
+
+  .face-btn-ref {
+    @apply absolute flex items-center justify-center pointer-events-none;
+    width: 38%;
+    height: 38%;
+    font-size: clamp(20px, 5vw, 36px);
+    opacity: 0.25;
+    transition: opacity 75ms ease-out, color 75ms ease-out;
+  }
+
+  .face-btn-ref.active {
+    opacity: 1;
+    color: var(--color-text-active);
+  }
+
+  mando-joystick,
+  mando-pad {
+    opacity: 0.9;
+  }
+}

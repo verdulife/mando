@@ -1,0 +1,12 @@
+{
+  "id": "fighter-dpad",
+  "name": "Fighter (D-Pad)",
+  "areas": [
+    "PD PD PD PD SE SE ST ST AY AY AY AY",
+    "PD PD PD PD SE SE ST ST AY AY AY AY",
+    "PD PD PD PD SE SE ST ST AY AY AY AY",
+    "PD PD PD PD SE SE ST ST AY AY AY AY",
+    "PD PD PD PD SE SE ST ST AY AY AY AY",
+    "PD PD PD PD SE SE ST ST AY AY AY AY"
+  ]
+}

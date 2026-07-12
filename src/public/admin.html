@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Mando - Panel de administración</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/layout-builder.js"></script>
+</head>
+
+<body class="bg-bg text-text h-screen overflow-y-auto p-6 leading-relaxed font-sans">
+  <div class="grid grid-cols-2 gap-5 max-w-5xl mx-auto">
+    <div class="card col-span-2 bg-panel border border-panel-border rounded-xl p-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl mb-1">Mando</h1>
+        <p class="text-muted">Panel de administración</p>
+      </div>
+      <button onclick="openBuilder()" class="px-4 py-2 bg-accent text-white text-sm font-semibold rounded-lg hover:brightness-110 transition-all">+ Crear layout</button>
+    </div>
+
+    <div class="card bg-panel border border-panel-border rounded-xl p-5">
+      <h2 class="text-sm text-muted uppercase tracking-wider mb-4">Estado del servidor</h2>
+      <div class="flex justify-between items-center py-2.5 border-b border-panel-border last:border-b-0">
+        <span>Servidor</span><span id="status-server" class="font-semibold">Cargando...</span>
+      </div>
+      <div class="flex justify-between items-center py-2.5 border-b border-panel-border last:border-b-0">
+        <span>ViGEmBus</span><span id="status-vigem" class="font-semibold">Cargando...</span>
+      </div>
+      <div class="flex justify-between items-center py-2.5 border-b border-panel-border last:border-b-0">
+        <span>Mandos activos</span><span id="status-controllers" class="font-semibold">-</span>
+      </div>
+      <div class="flex justify-between items-center py-2.5 border-b border-panel-border last:border-b-0">
+        <span>Puerto</span><span id="status-port" class="font-semibold">-</span>
+      </div>
+      <div class="flex justify-between items-center py-2.5 border-b border-panel-border last:border-b-0">
+        <span>IP local</span><span id="status-ip" class="font-semibold">-</span>
+      </div>
+    </div>
+
+    <div class="card bg-panel border border-panel-border rounded-xl p-5">
+      <h2 class="text-sm text-muted uppercase tracking-wider mb-4">Conectar un dispositivo</h2>
+      <p class="text-muted mb-4">Usa la IP local para conectar dispositivos. <code>mando.local</code> está disponible si hay un resolvedor Bonjour instalado.</p>
+      <div class="flex flex-col items-center gap-3">
+        <div id="qr-code">Cargando QR...</div>
+        <div id="url-list" class="flex flex-col gap-2.5 w-full"></div>
+      </div>
+    </div>
+
+    <div class="card col-span-2 bg-panel border border-panel-border rounded-xl p-5">
+      <h2 class="text-sm text-muted uppercase tracking-wider mb-4">Dispositivos conectados</h2>
+      <div id="clients-list" class="flex flex-col gap-2.5">
+        <div class="text-muted text-center p-5">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-muted text-sm mt-5">El panel se actualiza automáticamente cada 2 segundos.</p>
+
+  <script>
+    let _layouts = [];
+    async function fetchLayouts() {
+      try { const res = await fetch('/api/layouts'); _layouts = await res.json(); } catch { _layouts = []; }
+    }
+    window._refreshLayouts = async () => {
+      await fetchLayouts();
+      const clients = await fetchClients();
+      renderClients(clients);
+    }
+    async function fetchStatus() {
+      try { const res = await fetch('/api/status'); return await res.json(); } catch { return null; }
+    }
+    async function fetchClients() {
+      try { const res = await fetch('/api/clients'); return await res.json(); } catch { return []; }
+    }
+
+    function setStatus(id, text, ok) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'font-semibold ' + (ok ? 'text-success' : 'text-danger');
+    }
+
+    function renderQR(url) {
+      document.getElementById('qr-code').innerHTML = `<img src="/api/qr?url=${encodeURIComponent(url)}" alt="Código QR" class="max-w-[220px] w-full h-auto bg-white rounded-lg p-3">`;
+    }
+
+    function renderUrls(urls) {
+      document.getElementById('url-list').innerHTML = urls.map(({ url, label }) => `
+        <div class="flex items-center gap-2.5 p-3 bg-bg border border-panel-border rounded-lg">
+          <div class="flex-1 min-w-0">
+            <code class="text-[0.95rem] break-all">${url}</code>
+            ${label ? `<div class="text-xs text-muted mt-0.5">${label}</div>` : ''}
+          </div>
+          <button onclick="navigator.clipboard.writeText('${url}')" class="px-3 py-1.5 bg-panel-hover border border-panel-border rounded-md text-sm whitespace-nowrap hover:border-accent transition-colors">Copiar</button>
+        </div>
+      `).join('');
+    }
+
+    function formatDeviceInfo(info) {
+      if (!info) return 'Dispositivo desconocido';
+      if (info.isIOS) return 'iOS';
+      if (info.platform) return info.platform;
+      return 'Dispositivo desconocido';
+    }
+
+    async function updateSetting(playerId, key, value) {
+      try {
+        const body = {}; body[key] = value;
+        await fetch(`/api/clients/${playerId}/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } catch {
+        alert('No se pudo actualizar el ajuste');
+        await refresh();
+      }
+    }
+
+    function renderClients(clients) {
+      const list = document.getElementById('clients-list');
+      if (clients.length === 0) {
+        list.innerHTML = '<div class="text-muted text-center p-5">Ningún dispositivo conectado</div>';
+        return;
+      }
+      list.innerHTML = clients.map((client) => {
+        const isIOS = client.deviceInfo && client.deviceInfo.isIOS;
+        const vibrationDisabled = isIOS ? 'disabled' : '';
+        const vibrationTitle = isIOS ? 'La vibración no es compatible con iOS' : '';
+        return `
+        <div class="flex items-center justify-between gap-4 p-3.5 bg-bg border border-panel-border rounded-lg max-md:flex-col max-md:items-start">
+          <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+            <span class="font-semibold">Mando ${client.playerId}</span>
+            <span class="text-sm text-muted">${client.remoteAddress} · ${client.buttonsCount} botón(es) · ${client.axesCount} eje(s)</span>
+            <span class="text-xs text-muted">${formatDeviceInfo(client.deviceInfo)}</span>
+          </div>
+          <div class="flex items-center gap-4 flex-wrap">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none" title="Activar o desactivar el sonido al pulsar botones">
+              <input type="checkbox" class="accent-brand cursor-pointer" ${client.soundEnabled ? 'checked' : ''} onchange="updateSetting(${client.playerId}, 'soundEnabled', this.checked)">
+              <span>Sonido</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none ${vibrationDisabled}" title="${vibrationTitle || 'Activar o desactivar la vibración al pulsar botones'}">
+              <input type="checkbox" class="accent-brand cursor-pointer" ${client.vibrationEnabled ? 'checked' : ''} ${vibrationDisabled ? 'disabled' : ''} onchange="updateSetting(${client.playerId}, 'vibrationEnabled', this.checked)">
+              <span>Vibración</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none" title="Cambiar la disposición de los botones">
+              <select class="bg-panel-hover border border-accent/30 rounded-lg text-sm px-3 py-1.5 cursor-pointer outline-none hover:border-accent/60 focus:border-accent transition-colors" onchange="updateSetting(${client.playerId}, 'layout', this.value)">
+                ${_layouts.map(l => `<option value="${l.id}" ${client.layout === l.id ? 'selected' : ''}>${l.name}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    async function refresh() {
+      const status = await fetchStatus();
+      if (!status) {
+        setStatus('status-server', 'Desconectado', false);
+        setStatus('status-vigem', 'Desconectado', false);
+        document.getElementById('status-controllers').textContent = '-';
+        document.getElementById('status-port').textContent = '-';
+        document.getElementById('status-ip').textContent = '-';
+        document.getElementById('clients-list').innerHTML = '<div class="text-muted text-center p-5">No se pudo conectar al servidor</div>';
+        return;
+      }
+
+      setStatus('status-server', 'En línea', true);
+      setStatus('status-vigem', status.gamepadClient ? 'Conectado' : 'No disponible', status.gamepadClient);
+      document.getElementById('status-controllers').textContent = status.activeControllers;
+      document.getElementById('status-port').textContent = status.port;
+      document.getElementById('status-ip').textContent = status.localIp;
+
+      const ipUrl = `http://${status.localIp}:${status.port}/`;
+      renderQR(ipUrl);
+      const urls = [
+        { url: ipUrl, label: 'Recomendada para dispositivos' }
+      ];
+      if (status.mdns) {
+        urls.push({ url: `http://${status.mdns}/`, label: 'Alternativa (mDNS)' });
+      }
+      renderUrls(urls);
+
+      const clients = await fetchClients();
+      renderClients(clients);
+    }
+
+    async function boot() {
+      await fetchLayouts();
+      refresh();
+    }
+    boot();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+{
+  "id": "shooter",
+  "name": "Shooter",
+  "areas": [
+    "LB LB LB SE ST RB RB RB AY AY AY LT",
+    "LB LB LB SE ST RB RB RB AY AY AY LT",
+    "LS LS LS LS PD PD PD PD AY AY AY LT",
+    "LS LS LS LS PD PD PD PD RS RS RS RT",
+    "LS LS LS LS PD PD PD PD RS RS RS RT",
+    "LS LS LS LS PD PD PD PD RS RS RS RT"
+  ]
+}

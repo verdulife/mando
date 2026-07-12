@@ -1,0 +1,12 @@
+{
+  "id": "racing",
+  "name": "Racing",
+  "areas": [
+    "LB LB LB LB SE SE ST ST RB RB RB LT",
+    "LB LB LB LB SE SE ST ST RB RB RB LT",
+    "LS LS LS LS PD PD PD AY AY AY AY LT",
+    "LS LS LS LS PD PD PD AY AY AY AY RT",
+    "LS LS LS LS PD PD PD AY AY AY AY RT",
+    "LS LS LS LS PD PD PD AY AY AY AY RT"
+  ]
+}

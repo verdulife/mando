@@ -1,0 +1,12 @@
+{
+  "id": "gameboy-dpad",
+  "name": "GameBoy (D-Pad)",
+  "areas": [
+    "PD PD PD PD SE SE ST ST AB AB AB AB",
+    "PD PD PD PD SE SE ST ST AB AB AB AB",
+    "PD PD PD PD SE SE ST ST AB AB AB AB",
+    "PD PD PD PD SE SE ST ST AB AB AB AB",
+    "PD PD PD PD SE SE ST ST AB AB AB AB",
+    "PD PD PD PD SE SE ST ST AB AB AB AB"
+  ]
+}

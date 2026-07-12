@@ -1,0 +1,12 @@
+{
+  "id": "default",
+  "name": "Xbox",
+  "areas": [
+    "LT LT LT LT LB LB RB RB RT RT RT RT",
+    "LT LT LT LT LB LB RB RB RT RT RT RT",
+    "LS LS LS LS SE RS RS RS AY AY AY AY",
+    "LS LS LS LS SE RS RS RS AY AY AY AY",
+    "LS LS LS LS ST RS RS RS AY AY AY AY",
+    "LS LS LS LS ST RS RS RS AY AY AY AY"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "arcade-dpad",
+  "name": "Arcade (D-Pad)",
+  "areas": [
+    "PD PD PD PD SE SE ST ST AX AX AX AX",
+    "PD PD PD PD SE SE ST ST AX AX AX AX",
+    "PD PD PD PD SE SE ST ST AX AX AX AX",
+    "PD PD PD PD SE SE ST ST AX AX AX AX",
+    "PD PD PD PD SE SE ST ST AX AX AX AX",
+    "PD PD PD PD SE SE ST ST AX AX AX AX"
+  ]
+}

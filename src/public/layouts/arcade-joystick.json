@@ -1,0 +1,12 @@
+{
+  "id": "arcade-joystick",
+  "name": "Arcade (Joystick)",
+  "areas": [
+    "LS LS LS LS SE SE ST ST AX AX AX AX",
+    "LS LS LS LS SE SE ST ST AX AX AX AX",
+    "LS LS LS LS SE SE ST ST AX AX AX AX",
+    "LS LS LS LS SE SE ST ST AX AX AX AX",
+    "LS LS LS LS SE SE ST ST AX AX AX AX",
+    "LS LS LS LS SE SE ST ST AX AX AX AX"
+  ]
+}

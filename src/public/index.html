@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mando">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/proto-mono.css">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Mando</title>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => console.log('SW registrado:', registration.scope))
+          .catch((error) => console.error('SW error:', error));
+      });
+    }
+    document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  </script>
+</head>
+
+<body>
+  <mando-gamepad></mando-gamepad>
+
+  <script type="module" src="/components/mando-button.js"></script>
+  <script type="module" src="/components/mando-joystick.js"></script>
+  <script type="module" src="/components/mando-pad.js"></script>
+  <script type="module" src="/components/mando-gamepad.js"></script>
+</body>
+
+</html>
