@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -20,6 +23,8 @@ jobs:
       - run: bun run build
 
       - uses: softprops/action-gh-release@v2
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
           files: dist/mando.exe
           generate_release_notes: true
