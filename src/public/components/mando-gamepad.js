@@ -5,6 +5,7 @@ class MandoGamepad extends HTMLElement {
     super()
     this._ws = null
     this._reconnectTimer = null
+    this._connecting = false
     this._audioCtx = null
     this._soundEnabled = true
     this._vibrationEnabled = true
@@ -76,6 +77,8 @@ class MandoGamepad extends HTMLElement {
 
   connect() {
     if (this._ws) return
+    if (this._connecting) return
+    this._connecting = true
     this.setStatus('Conectando...')
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${location.host}/ws`
@@ -83,6 +86,7 @@ class MandoGamepad extends HTMLElement {
 
     this._ws.onopen = () => {
       this.setStatus('Conectado')
+      this._connecting = false
       setTimeout(() => {
         if (this._ws && this._ws.readyState === WebSocket.OPEN) {
           this._ws.send(JSON.stringify({
@@ -101,6 +105,8 @@ class MandoGamepad extends HTMLElement {
     this._ws.onclose = () => {
       this.setStatus('Desconectado. Reconectando...')
       this._ws = null
+      this._connecting = false
+      if (this._reconnectTimer) clearTimeout(this._reconnectTimer)
       this._reconnectTimer = setTimeout(() => this.connect(), 1000)
     }
 

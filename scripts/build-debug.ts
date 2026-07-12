@@ -74,7 +74,7 @@ async function main() {
   ]
   const rceditResult = Bun.spawnSync(rceditArgs, { stdio: ['inherit', 'inherit', 'inherit'] })
   if (rceditResult.exitCode !== 0) {
-    console.log('  Warning: rcedit failed (${rceditResult.stderr.toString().trim()}), continuing...')
+    console.log(`  Warning: rcedit failed (${rceditResult.stderr.toString().trim()}), continuing...`)
   }
 
   step('Smoke test')

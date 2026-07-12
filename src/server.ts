@@ -636,11 +636,6 @@ if (!isAutoStart) {
 
 process.on('SIGINT', () => {
   log('Cerrando servidor y anuncio mDNS...')
-  if (service) {
-    service.stop(() => {
-      process.exit(0)
-    })
-  } else {
-    process.exit(0)
-  }
+  try { service?.stop() } catch {}
+  process.exit(0)
 })
