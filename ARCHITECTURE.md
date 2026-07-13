@@ -17,8 +17,12 @@ Arranca un servidor HTTP/WebSocket con `Bun.serve`. Publica el servicio vía mDN
 | `GET /admin` | Sirve `src/public/admin.html` (panel de administración). |
 | `GET /api/status` | Igual que `/health`. |
 | `GET /api/clients` | Lista de clientes conectados. |
-| `POST /api/clients/:id/settings` | Actualiza ajustes (sonido/vibración) de un cliente. |
+| `POST /api/clients/:id/settings` | Actualiza ajustes (sonido/vibración/layout) de un cliente. |
 | `GET /api/qr` | Genera código QR SVG para una URL. |
+| `GET /api/layouts` | Lista layouts disponibles (built-in + usuario). |
+| `POST /api/layouts` | Guarda un nuevo layout de usuario. |
+| `GET /api/layouts/:id` | Devuelve un layout por ID (built-in o usuario). |
+| `DELETE /api/layouts/:id` | Elimina un layout de usuario. |
 | `GET /ws` | Upgrade a WebSocket. |
 
 #### WebSocket
@@ -41,17 +45,21 @@ Mensajes que envía el servidor:
 
 #### Mapeo de botones web → mando Xbox 360
 
-| Webapp | ViGEm/Xbox 360 |
-|--------|----------------|
-| A, B, X, Y | A, B, X, Y |
-| START | START |
-| SELECT | BACK |
+Los layouts usan códigos cortos (definidos en `diccionario.js`). El servidor los mapea a botones Xbox 360 en `handleWebButton()`:
+
+| Código layout | ViGEm/Xbox 360 |
+|---------------|----------------|
+| A, B, X, Y | A, B, X, Y (vía eventos nativos del pad) |
+| SE | BACK (SELECT) |
+| ST | START |
 | LB | LEFT_SHOULDER |
 | RB | RIGHT_SHOULDER |
 | LT | `leftTrigger` (eje 0-1) |
 | RT | `rightTrigger` (eje 0-1) |
-| Joystick izquierdo | `leftX`, `leftY` |
-| Joystick derecho | `rightX`, `rightY` |
+| L3 | LEFT_THUMB |
+| R3 | RIGHT_THUMB |
+| LS (joystick) | `leftX`, `leftY` |
+| RS (joystick) | `rightX`, `rightY` |
 
 #### Estado por cliente
 
@@ -62,6 +70,7 @@ interface ClientState {
   axes: Map<string, number>
   soundEnabled: boolean
   vibrationEnabled: boolean
+  layout: string
   deviceInfo?: { userAgent: string; platform: string; maxTouchPoints?: number; isIOS: boolean }
 }
 ```
@@ -89,49 +98,93 @@ Wrapper sobre `vigemclient` (CommonJS + addon nativo N-API). Soporta múltiples 
 - `getActiveControllersCount()`: número de mandos virtuales activos.
 - `controller.updateMode = 'manual'`: los cambios no se envían al driver hasta llamar a `controller.update()`.
 
-### 3. Webapp táctil (`src/public/index.html`)
+### 2.5 Auto-instalación de ViGEmBus (`src/vigem-installer.ts`)
 
-Aplicación web autocontenida (HTML + CSS + JS inline).
+En primera ejecución, si `initGamepad()` falla con `BUS_NOT_FOUND` o `BUS_ACCESS_FAILED`, el servidor intenta instalar ViGEmBus automáticamente:
 
-#### Estilos
+1. Extrae el installer desde el ejecutable (o desde `assets/ViGEmBus_*.exe.bin` en dev).
+2. Verifica si tiene permisos de admin. Si no, se re-lanza como administrador y termina.
+3. Ejecuta el installer en modo silencioso (`/exenoui /qn /norestart`).
+4. Intenta iniciar el servicio del driver.
+5. Si necesita reinicio, lo notifica.
 
-- TailwindCSS v4.3.2 con `@tailwindcss/postcss`.
-- `src/public/styles-input.css`: fuente de estilos con `@import "tailwindcss"`, `@theme` (colores custom: `--color-bg`, `--color-panel`, `--color-text`, etc.), `@layer base/components`.
-- Build: `scripts/build-css.ts` usa PostCSS API para procesar `styles-input.css` → `styles.css`.
-- `@source` con rutas absolutas (`C:/Users/verdu/mando/src/public/**/*.html`) porque las relativas fallan en Windows+Bun.
-- Clases arbitrarias: `grid-rows-[1fr_2fr]`, `top-[6%]`, `text-[#f5d742]`, etc.
+El instalador de ViGEmBus se embebe en el ejecutable compilado. En desarrollo, debe descargarse manualmente:
+```
+curl -L -o assets/ViGEmBus_1.22.0_x64_x86_arm64.exe <url>
+copy assets/ViGEmBus_*.exe assets/ViGEmBus_*.exe.bin
+```
 
-#### Layout
+### 3. Webapp táctil (Web Components)
 
-Grid CSS de 12 columnas:
+La webapp está construida con Web Components nativos (custom elements) y un grid engine declarativo configurable por JSON.
 
-- **Fila superior (`#top-row`)**: proporciones `4fr 2fr 2fr 4fr`.
-  - LT (4), LB (2), RB (2), RT (4).
-- **Fila inferior (`#main-grid`)**: proporciones `4fr 1fr 3fr 4fr`.
-  - Joystick izquierdo (4).
-  - SELECT/START (1).
-  - Joystick derecho (3).
-  - ABXY (4).
+#### Componentes
 
-#### Controles
+| Componente | Archivo | Propósito |
+|------------|---------|-----------|
+| `<mando-gamepad>` | `components/mando-gamepad.js` | Orquestador: gestiona WS, audio, háptico, settings, layout |
+| `<mando-button>` | `components/mando-button.js` | Botón táctil con glow radial + neón interior |
+| `<mando-joystick>` | `components/mando-joystick.js` | Joystick analógico con deadzone |
+| `<mando-pad>` | `components/mando-pad.js` | Pad multifunción (ABXY, dpad, AB, ABX) con detección angular y multitouch |
+| `<grid-engine>` | `components/grid-engine.js` | Construye la UI desde un JSON de layout |
 
-- Usa eventos `pointerdown`/`pointerup`/`pointermove`/`pointercancel`.
-- `touch-action: manipulation` para evitar doble-tap zoom.
-- Joysticks con deadzone del 5% (`DEADZONE = 0.05`).
-- ABXY: área única dividida por ángulos con soporte multitouch.
-- SELECT/START: iconos SVG.
+#### Grid Engine
+
+`grid-engine.js` recibe un JSON con:
+- `areas`: matriz 6×12 de códigos (ej. `LT`, `LS`, `SE`, `AY`).
+- `components` (opcional): override por código.
+
+Construye un CSS Grid con `grid-template-areas` y crea el componente adecuado para cada código según `diccionario.js`.
+
+#### Layouts
+
+Los layouts son archivos JSON en `src/public/layouts/`. Ejemplo (`default.json` — Xbox):
+```json
+{
+  "id": "default",
+  "name": "Xbox",
+  "areas": [
+    "LT LT LT LT LB LB RB RB RT RT RT RT",
+    ...
+    "LS LS LS LS SE RS RS RS AY AY AY AY",
+    ...
+  ]
+}
+```
+
+Layouts disponibles: Xbox, GameBoy (D-Pad/Joystick), Arcade (D-Pad/Joystick, ABC), Fighter (D-Pad/Joystick), Racing, Shooter. Los layouts de usuario se guardan en `%APPDATA%/Mando/layouts/`.
+
+#### Diccionario de códigos (`layouts/diccionario.js`)
+
+| Código | Tipo | Descripción |
+|--------|------|-------------|
+| `SE` | button | SELECT |
+| `ST` | button | START |
+| `LT`, `LB`, `RB`, `RT` | button | Shoulders/triggers |
+| `L3`, `R3` | button | Thumbsticks click |
+| `AY` | pad (abxy) | ABXY |
+| `PD` | pad (dpad) | D-Pad direccional |
+| `AB` | pad (ab) | A + B |
+| `AX`/`ABX` | pad (abx) | A + B + X |
+| `LS`, `RS` | joystick | Joysticks analógicos |
 
 #### Feedback
 
-- Visual: clase `.active` al pulsar.
-- Háptico: `navigator.vibrate(8)` (no funciona en iOS Safari).
-- Sonoro: Web Audio API con osciladores `triangle`/`square`, estilo "tac-tac".
+- Visual: clase `.active` + glow radial que sigue al dedo (250px, blur 44px) + neón interior fino.
+- Háptico: `navigator.vibrate(8)` (no disponible en iOS Safari).
+- Sonoro: Web Audio API con osciladores `triangle` + `square`, estilo "tac-tac".
 
 #### Conexión
 
 - WebSocket a `ws://${location.host}/ws`.
-- Reconexión automática cada 1 segundo si se cierra la conexión.
+- Reconexión automática cada 1 segundo.
 - Indicador de estado flotante (`#status`).
+
+#### Estilos
+
+- TailwindCSS v4.3.2 con `@tailwindcss/postcss`.
+- `styles-input.css` → `styles.css` mediante PostCSS.
+- `@source` con rutas absolutas (relativas fallan en Windows+Bun).
 
 ## Flujo de datos
 
@@ -150,7 +203,7 @@ Grid CSS de 12 columnas:
 
 ## Decisiones técnicas clave
 
-- **Inline todo en `index.html`**: se simplifica el despliegue. No hay bundler ni assets externos.
+- **Web Components modulares**: `index.html` es un esqueleto mínimo que carga componentes nativos. No hay framework ni bundler.
 - **`Bun.file()` para servir HTML**: el servidor lee `index.html` desde disco.
 - **No hay base de datos ni persistencia**: todo es estado en memoria.
 - **mDNS con fallback**: se anuncia `mando.local` para facilitar la conexión. Si falta Bonjour, se usa IP local.
@@ -159,8 +212,10 @@ Grid CSS de 12 columnas:
 
 ## Puntos de fricción conocidos
 
-- ViGEmBus requiere instalación con privilegios de administrador.
+- ViGEmBus requiere privilegios de administrador para instalarse.
 - `mando.local` puede no resolverse si Windows no tiene un resolvedor mDNS instalado. (Manejado con fallback.)
 - `vigemclient` tiene un addon nativo; `bun build --compile` embebe el `.node` y la DLL.
 - El altavoz del iPhone no reproduce bien frecuencias muy graves; el sonido se ha ajustado a "tac-tac" seco.
 - Los antivirus pueden detectar falsos positivos por: binario sin firmar, driver kernel embebido, y modificación del subsistema PE.
+- En desarrollo, `vigem-installer.ts` requiere el archivo `assets/ViGEmBus_*.exe.bin` (en `.gitignore`). Descargar manualmente tras el clone.
+- `styles-input.css` tiene `@source` con ruta absoluta (`C:/Users/verdu/mando/...`). Solo funciona en el PC del desarrollador.

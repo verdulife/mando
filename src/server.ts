@@ -123,7 +123,7 @@ function handleWebButton(playerId: number, name: string, pressed: boolean): void
     case 'RT':
       setAxis(playerId, 'rightTrigger', pressed ? 1 : 0)
       break
-    case 'SELECT':
+    case 'SE':
       setButton(playerId, 'BACK', pressed)
       break
     case 'ST':
