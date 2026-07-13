@@ -118,7 +118,15 @@
       }
     }
 
+    let _prevClientsJson = null;
+
     function renderClients(clients) {
+      const json = JSON.stringify(clients);
+      if (json === _prevClientsJson) return;
+      _prevClientsJson = json;
+
+      if (document.activeElement?.tagName === 'SELECT') return;
+
       const list = document.getElementById('clients-list');
       if (clients.length === 0) {
         list.innerHTML = '<div class="text-muted text-center p-5">Ningún dispositivo conectado</div>';
