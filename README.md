@@ -7,6 +7,22 @@ Convierte uno o varios iPhones (u otros dispositivos con navegador) en mandos Xb
 - Cada dispositivo se conecta por WiFi a una webapp táctil.
 - Los mandos se detectan en Windows como controladores Xbox 360 reales (aparecen en `joy.cpl`).
 
+## Capturas
+
+<p align="center">
+  <img src="assets/mando.png" alt="Mando táctil" width="320">
+  <br>
+  <strong>Webapp táctil</strong> — desde el navegador del iPhone
+</p>
+
+<br>
+
+<p align="center">
+  <img src="assets/admin.png" alt="Panel de administración" width="500">
+  <br>
+  <strong>Panel de administración</strong> — desde el navegador del PC
+</p>
+
 ## Características
 
 - Webapp táctil con joysticks, ABXY, shoulders, triggers, SELECT/START.
